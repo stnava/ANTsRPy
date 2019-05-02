@@ -1,1 +1,2 @@
+gfortran
 libv8-dev

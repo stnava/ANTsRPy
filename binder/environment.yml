@@ -9,6 +9,7 @@ dependencies:
   - nibabel
   - plotly
   - webcolors
+  - rpy2
   - scikit-image
   - cmake
   - keras
