@@ -1,8 +1,8 @@
 ### install regular packages
 
-install.packages("reticulate") # python support in RMarkdown
-install.packages("ggplot2") # for plotting
-install.packages(c("rmarkdown", "caTools", "bitops")) # for knitting
+install.packages("reticulate", repos = "http://cran.us.r-project.org") # python support in RMarkdown
+install.packages("ggplot2",repos = "http://cran.us.r-project.org") # for plotting
+install.packages(c("rmarkdown",  "devtools", "caTools", "bitops"),repos = "http://cran.us.r-project.org") # for knitting
 
 install.packages(
   c(
@@ -33,9 +33,8 @@ install.packages(
     "testthat",
     "tfruns",
     "visreg",
-    "zeallot")
+    "zeallot"),repos = "http://cran.us.r-project.org"
     )
 
-install.packages("devtools")
-devtools::install_github("ANTsX/ANTsR", ref = "tag")
-devtools::install_github("ANTsX/ANTsRNet", ref = "tag")
+devtools::install_github("ANTsX/ANTsR" )
+devtools::install_github("ANTsX/ANTsRNet" )
