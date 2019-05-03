@@ -1,0 +1,16 @@
+dependencies:
+  - matplotlib
+  - numpy
+  - pandas
+  - scipy
+  - statsmodels
+  - scikit-learn
+  - statsmodels
+  - nibabel
+  - plotly
+  - webcolors
+  - rpy2
+  - scikit-image
+  - cmake
+  - keras
+  - tensorflow
