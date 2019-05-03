@@ -1,32 +1,24 @@
-print("Begin")
-install.packages("tidyverse")
-install.packages("rmarkdown")
-install.packages("httr")
-install.packages("shinydashboard")
-install.packages('leaflet')
+### install regular packages
+install.packages("reticulate", repos = "http://cran.us.r-project.org") # python support in RMarkdown
+install.packages("ggplot2",repos = "http://cran.us.r-project.org") # for plotting
+install.packages(c("rmarkdown",  "devtools", "caTools", "bitops"),repos = "http://cran.us.r-project.org") # for knitting
+
 install.packages(
   c(
-  "Rcpp", # "magrittr","dplyr","devtools",
+  "Rcpp", "magrittr","dplyr",
   "RcppEigen",
   "magic",
   "misc3d",
   "pander",
   "pixmap",
   "png",
-  "rmarkdown",
   "rsvd",
   "V8",
   "colormap",
-  "viridis" )
-  )
-if ( TRUE )
-  {
-  install.packages(
-    c(
+  "viridis",
     "abind",
     "fastICA",
     "fpc",
-    "ggplot2",
     "igraph",
     "keras",
     "knitr",
@@ -40,8 +32,8 @@ if ( TRUE )
     "testthat",
     "tfruns",
     "visreg",
-    "zeallot")
+    "zeallot"),repos = "http://cran.us.r-project.org"
     )
-#  devtools::install_github("YeeJeremy/rflann")
-  }
-# devtools::install_github( "stnava/ANTsR")
+
+# devtools::install_github("ANTsX/ANTsR" )
+# devtools::install_github("ANTsX/ANTsRNet" )
