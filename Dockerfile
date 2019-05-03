@@ -5,11 +5,6 @@ COPY . ${HOME}
 COPY --chown=rstudio:rstudio . ${HOME}
 RUN chown -R ${NB_USER} ${HOME}
 
-
-COPY . /usr/local/src/scripts
-COPY ./scripts/* /usr/local/src/scripts
-WORKDIR /usr/local/src/scripts
-RUN chmod a+rwx /usr/local/src/scripts
 RUN apt-get update; \
     apt-get -y upgrade
 RUN apt-get -y install cmake curl
@@ -26,9 +21,12 @@ RUN sudo -H pip3 install virtualenv wheel
 RUN sudo -H pip3 install scipy pandas numpy matplotlib sklearn statsmodels nibabel
 RUN sudo -H pip3 install coveralls plotly webcolors scikit-image
 RUN sudo -H pip3 install keras tensorflow
-RUN git clone https://github.com/ANTsX/ANTsPy.git
+# RUN git clone https://github.com/ANTsX/ANTsPy.git
 # RUN cd ANTsPy &&  sudo -H pip3 wheel .
-RUN cd ANTsPy  && sudo -H  python3 setup.py  install && cd ..
+# RUN cd ANTsPy  && sudo -H  python3 setup.py  install && cd ..
+RUN wget https://github.com/ANTsX/ANTsPy/releases/download/v0.1.8/antspyx-0.1.7-cp35-cp35m-linux_x86_64.whl
+RUN sudo -H pip3 install antspyx-0.1.7-cp35-cp35m-linux_x86_64.whl -t .
+RUN sudo -H pip3 install --user antspyx-0.1.7-cp35-cp35m-linux_x86_64.whl
 
 ## Run an install.R script, if it exists.
 RUN if [ -f install.R ]; then R --quiet -f install.R; fi
