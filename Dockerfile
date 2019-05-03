@@ -16,12 +16,12 @@ RUN CMAKE_INSTALLER=install-cmake.sh && \
 RUN apt-get install -y python3 python3-pip
 RUN chown -R ${NB_USER} /home/rstudio/.cache/pip/http
 RUN chown -R ${NB_USER} /home/rstudio/.cache/pip
-RUN sudo -H pip3 install --upgrade pip
+RUN sudo -H pip install --upgrade pip
 RUN apt-get install -y libv8-dev
-RUN sudo -H pip3 install virtualenv
-RUN sudo -H pip3 install scipy pandas numpy matplotlib sklearn statsmodels nibabel
-RUN sudo -H pip3 install coveralls plotly webcolors scikit-image
-RUN sudo -H pip3 install keras tensorflow
+RUN sudo -H pip install virtualenv
+RUN sudo -H pip install scipy pandas numpy matplotlib sklearn statsmodels nibabel
+RUN sudo -H pip install coveralls plotly webcolors scikit-image
+RUN sudo -H pip install keras tensorflow
 RUN git clone https://github.com/ANTsX/ANTsPy.git && cd ANTsPy  && python3 setup.py  install && cd ..
 
 ## Run an install.R script, if it exists.
