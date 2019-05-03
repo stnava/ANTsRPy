@@ -5,7 +5,11 @@ COPY . ${HOME}
 COPY --chown=rstudio:rstudio . ${HOME}
 RUN chown -R ${NB_USER} ${HOME}
 
-RUN chmod a+rwx ${HOME}
+
+COPY . /usr/local/src/scripts
+COPY ./scripts/* /usr/local/src/scripts
+WORKDIR /usr/local/src/scripts
+RUN chmod a+rwx /usr/local/src/scripts
 RUN apt-get update; \
     apt-get -y upgrade
 RUN apt-get -y install cmake curl
@@ -16,13 +20,15 @@ RUN CMAKE_INSTALLER=install-cmake.sh && \
 RUN apt-get install -y python3 python3-pip
 RUN chown -R ${NB_USER} /home/rstudio/.cache/pip/http
 RUN chown -R ${NB_USER} /home/rstudio/.cache/pip
-RUN sudo -H pip install --upgrade pip
+# RUN sudo -H pip3 install --upgrade pip3
 RUN apt-get install -y libv8-dev
-RUN sudo -H pip install virtualenv
-RUN sudo -H pip install scipy pandas numpy matplotlib sklearn statsmodels nibabel
-RUN sudo -H pip install coveralls plotly webcolors scikit-image
-RUN sudo -H pip install keras tensorflow
-RUN git clone https://github.com/ANTsX/ANTsPy.git && cd ANTsPy  && python3 setup.py  install && cd ..
+RUN sudo -H pip3 install virtualenv wheel
+RUN sudo -H pip3 install scipy pandas numpy matplotlib sklearn statsmodels nibabel
+RUN sudo -H pip3 install coveralls plotly webcolors scikit-image
+RUN sudo -H pip3 install keras tensorflow
+RUN git clone https://github.com/ANTsX/ANTsPy.git
+# RUN cd ANTsPy &&  sudo -H pip3 wheel .
+RUN cd ANTsPy  && sudo -H  python3 setup.py  install && cd ..
 
 ## Run an install.R script, if it exists.
 RUN if [ -f install.R ]; then R --quiet -f install.R; fi
