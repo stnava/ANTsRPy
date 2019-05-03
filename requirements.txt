@@ -6,3 +6,5 @@ statsmodels
 webcolors
 matplotlib
 Pillow
+keras
+tensorflow
