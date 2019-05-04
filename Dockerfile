@@ -17,7 +17,7 @@ RUN chown -R ${NB_USER} /home/rstudio/.cache/pip/http
 RUN chown -R ${NB_USER} /home/rstudio/.cache/pip
 # RUN  pip3 install --upgrade pip3
 RUN apt-get install -y libv8-dev
-RUN apt-get install python3-tk
+RUN apt-get install -y python3-tk
 RUN  pip3 install virtualenv wheel
 RUN  pip3 install scipy pandas numpy matplotlib sklearn statsmodels nibabel
 RUN  pip3 install coveralls plotly webcolors scikit-image
