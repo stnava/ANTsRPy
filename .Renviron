@@ -1,0 +1,2 @@
+PYTHONPATH="/srv/venv/bin/python3"
+RETICULATE_PYTHON="/srv/venv/bin/python3"
