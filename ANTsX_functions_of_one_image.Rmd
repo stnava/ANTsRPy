@@ -1,0 +1,365 @@
+---
+title: 'ANTsX: R and Python Introduction to $f(x)$ Medical Image Analysis'
+author: "Avants, Tustison"
+date: "5/6/2019"
+output: 
+  beamer_presentation:
+    colortheme: "dolphin"
+urlcolor: blue
+---
+
+## Setup reticulate and visualization
+
+Necessary setup code:  may be fragile - still fairly early in mixing python and R within the same compilable document.  This has only been tested on linux and OSX with python3.7 and a recent version of R.
+
+```{r}
+library(reticulate)
+matplotlib <- import("matplotlib")
+matplotlib$use("Agg", force = TRUE)
+```
+
+
+## ANTsR and ANTsPy imports
+
+- In python, we import libraries:
+
+```{python imp}
+import ants
+```
+
+- in R, we call `library` or `require` to do the same thing:
+
+```{r rimp,message=FALSE,warning=FALSE}
+library( ANTsR )
+require( ANTsR )
+```
+
+- ANTsR depends on ITKR and ANTsRCore which also get loaded here.
+
+## ANTsPy: Basic I/O
+
+We can read and write to a variety of image types.
+
+```{python pabio}
+pyimgfn = ants.get_data( "r16" )
+pyimg = ants.image_read( pyimgfn )
+ants.image_write(pyimg, "/tmp/temp.mhd" )
+```
+
+Try an unsupported extension and you will see a list of allowable types.
+
+
+## ANTsR: Basic I/O
+
+ANTsPy was based on ANTsR so syntax is similar, by design.
+
+```{r ra1b,message=FALSE,warning=FALSE}
+imgfn = getANTsRData( "r64" )
+img = antsImageRead( imgfn )
+antsImageWrite( img, "/tmp/temp.mhd" )
+```
+
+
+## ANTsPy: Help
+
+```{python pa2}
+help( ants.ANTsImage )
+```
+
+## ANTsR: Help
+
+```{r ra1}
+help( "antsImage-class") 
+?`antsImage-class`  # alternative
+```
+
+
+## ANTsR: _show_
+
+```{r ra2}
+print( img )
+```
+
+
+
+## ANTsPy in R: _show_
+
+```{r ra22}
+print( py$pyimg )
+```
+
+
+## ANTsPy in python: _show_
+
+```{python}
+pyimg
+```
+
+
+## ANTsPy: Basic Plot
+
+```{python pa1}
+ants.plot( pyimg )
+```
+
+## ANTsPy: Basic Plot
+
+```{python pa1c}
+ants.plot( pyimg, crop = True )
+```
+
+## ANTsR: Basic Plot
+
+```{r ra1c,message=FALSE,warning=FALSE}
+plot( img, doCropping = FALSE )
+```
+
+## ANTsR: Basic Plot
+
+```{r ra1d,message=FALSE,warning=FALSE}
+plot( img, doCropping = TRUE )
+```
+
+## ANTsPy: Basic Plot with overlay
+
+```{python plotol}
+gradImg = ants.iMath( pyimg, 'Laplacian', 1, 1 )
+lo = 0.4
+hi = 1
+gthresh = ants.threshold_image( gradImg, lo, hi )
+gradImg = gradImg * gthresh
+```
+
+## ANTsPy: Basic Plot with overlay
+
+```{python plotolb}
+ants.plot( pyimg, overlay = gradImg, 
+  crop = True, overlay_alpha = 0.8 )
+```
+
+
+## ANTsR: Basic Plot with overlay
+
+We compute the same function $I_\text{Laplacian} = \frac{ \partial^2 I(x) }{\partial x^2}$:
+
+```{r ra1e,message=FALSE,warning=FALSE}
+gradImg = iMath( img, 'Laplacian', 1, 1  )
+```
+
+The core C$++$ code is [here](https://itk.org/Doxygen/html/classitk_1_1LaplacianImageFilter.html) the `itkLaplacianImageFilter`.
+
+## ANTsR: Overlay plot defined by python variables.
+
+```{r ra1f,message=FALSE,warning=FALSE}
+plot( img, gradImg, doCropping = TRUE, 
+      window.overlay = c( py$lo, py$hi ) )
+```
+
+## ANTsR: Overlay plot different palette
+
+```{r ra1g,message=FALSE,warning=FALSE,echo=FALSE}
+plot( img, gradImg, doCropping = TRUE, color.overlay = 'magma' )
+```
+
+## Medical images are acquired in physical space
+
+- The image encodes the geometry and approximate position of the patient in the image
+
+- Very different from your typical dog / cat / human image on the internet
+
+## A typical image used in deep learning
+
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+catimg = mpimg.imread( 'adorable-animal-blur-617278.jpg' )
+plt.imshow( catimg ) # an array type
+```
+
+
+## A medical image: the physical space of the image is critical to quantification
+
+- average adult brain volume of 1260 cubic centimeters (cm3) for men and 1130 cm3 for women
+
+- calculate brain volume from a real brain image
+
+- cast to array and back to image type to demonstrate importance of physical space
+
+
+## A medical image: the physical space of the image is critical to quantification
+
+```{r head}
+brain = antsImageRead( "~/.antspy/ch2.nii.gz"  )
+brainVol = sum( getMask( brain )  ) * 
+  prod( antsGetSpacing( brain ) ) / 1e3 # in cm3
+brainResam = resampleImage( brain, 
+  rep( 2, brain@dimension ), interpType='nearestNeighbor' )
+brainVol2 = sum( getMask( brainResam )  ) * 
+  prod( antsGetSpacing( brainResam ) ) / 1e3 # in cm3
+brainArray = as.antsImage( as.array( brainResam ) )
+brainVol3 = sum( getMask( brainArray )  ) * 
+  prod( antsGetSpacing( brainArray ) ) / 1e3 # in cm3
+print( paste( brainVol,  brainVol2, brainVol3 ) )
+```
+
+
+## A medical image: the physical space of the image (python)
+
+```{python headpy}
+import numpy as np
+brain = ants.image_read( "~/.antspy/ch2.nii.gz"  )
+mySpacing = ants.get_spacing( brain )
+myVoxelVol = mySpacing[0] * mySpacing[1] * mySpacing[2]
+brainVol = (brain.get_mask().sum()) * myVoxelVol / 1e3
+brainResam = ants.resample_image( brain, (2,2,2) )
+myVoxelVol2 = np.asarray( 
+  ants.get_spacing( brainResam ) ).cumprod()[2]
+brainVol2 = ( brainResam.get_mask().sum()  )
+brainVol2 = brainVol2 * myVoxelVol2 / 1e3 # in cm3
+brainNumpy = brainResam.numpy()
+brainNumpy = ants.from_numpy( brainNumpy ) # same as in R
+print( str( brainVol ) + " " + str( brainVol2 ) )
+```
+
+## Medical image physical space means we have to be a little more careful about image transformations
+
+- deep learning: rotate, flip, etc. without care for the "meaning" of these transformations or the parameters defining them
+
+- medical imaging: each transform parameter is tied to physical coordinates and thus translates to "real world" changes in the size of objects
+
+## Applying transformations to images
+
+We "move images around" geometrically in the physical space in order to align them to known coordinate systems ( more on this later )
+
+$$
+I_\text{rotated} = I( T( x ) )
+$$
+
+The transformations, $T$, are typically differentiable and invertible i.e. diffeomorphisms.
+
+A natural order of operations for building up diffeomorphisms in medical imaging is via:
+
+$$
+T_\text{total}( x ) = T_\text{translation} \circ T_\text{rigid} \circ T_\text{affine} \circ T_\text{deformation}( x )
+$$
+
+$$
+T_\text{total}( x ) = T_\text{translation}( T_\text{rigid}( T_\text{affine}( T_\text{deformation}( x ) ) ) )
+$$
+
+Why is the order like this?
+
+
+## Apply transformations in ANTsPy
+
+## Apply transformations in ANTsR
+
+
+## Medical image acquisition is imperfect
+
+- MRI and other modalities are imperfect measurements.  Here, $I(x)$ is an image indexed by spatial coordinate $x$. 
+
+$$
+I_\text{MRI}(x)= I_\text{true} \times I_\text{bias} \circ \phi(x) + I_\text{noise} + \epsilon
+$$
+- the $\phi$ is a spatial distortion field and we also have multiplicative and additive noise.
+
+- We will show ANTsR and ANTsPy methodology that illustrates how we adjust for these confounds.
+
+- Handling these issues is often the first step in making "clean data" out of neuroimaging datasets.
+
+## Image inhomogeneity or bias field
+
+- caused by FIXME
+
+- can be mitigated by unsupervised methods such as N4 [@Tustison2012].
+
+- N4 has become a standard in the field due to its generality and practical successes in evaluation studies
+
+- "Theory:" signal should be constant within the "same tissue" ie white matter in the brain
+
+## Image inhomogeneity or bias field: R
+
+The model produces a smooth field that gives $I_\text{true} = I_\text{MRI} / I_\text{biasField}$
+
+```{r n4r}
+biasImg = ri( 1 ) * makeImage( c(256,256), 1:256^2 )
+n4bias = n4BiasFieldCorrection( biasImg, shrinkFactor = 4, 
+                               returnBiasField = TRUE )
+n4corrected = biasImg / n4bias
+```
+
+## Image inhomogeneity or bias field: Input Image
+
+```{r,echo=FALSE}
+plot( biasImg )
+```
+## Image inhomogeneity or bias field: Bias Field 
+
+```{r,echo=FALSE}
+plot( n4bias )
+```
+
+## Image inhomogeneity or bias field: Corrected
+
+```{r,echo=FALSE}
+plot( n4corrected )
+```
+
+
+
+## Image inhomogeneity or bias field: Python
+
+```{python n4py}
+biasvec = np.linspace( 1, 2, 256*256 )
+biasFieldSim = ants.make_image( (256,256), biasvec )
+biasImg = pyimg * biasFieldSim
+n4corrected = ants.n4_bias_field_correction( biasImg,
+  shrink_factor = 4 )
+```
+
+
+## Image denoising: Background
+
+- caused by FIXME
+
+- can be mitigated by unsupervised methods that empirically estimate noise models
+
+- N4 has become a standard in the field due to its generality and practical successes in evaluation studies
+
+- "Theory:" signal should be constant within the "same tissue" ie white matter in the brain
+
+see [doi: 10.1002/jmri.22003.](https://www.ncbi.nlm.nih.gov/pubmed/20027588)
+
+## Image denoising: R
+
+The model produces an additive field that gives $I_\text{true} = I_\text{MRI} - I_\text{noise}$
+
+```{r dnzr}
+noizImg = ri( 1 ) + makeImage( c(256,256), rnorm( 256^2, 0, 10 ) )
+dnzImg = denoiseImage( noizImg, shrinkFactor = 1, p = 2, 
+                       noiseModel = 'Rician' )
+```
+
+
+## Image denoising: Input Image
+
+```{r,echo=FALSE}
+plot( noizImg )
+```
+## Image denoising: Corrected
+
+```{r,echo=FALSE}
+plot( dnzImg )
+```
+
+
+## Image denoising: Python
+
+```{python dnzpy}
+biasvec = np.linspace( 1, 2, 256*256 )
+biasFieldSim = ants.make_image( (256,256), biasvec )
+biasImg = pyimg * biasFieldSim
+n4corrected = ants.n4_bias_field_correction( biasImg,
+  shrink_factor = 4 )
+```
