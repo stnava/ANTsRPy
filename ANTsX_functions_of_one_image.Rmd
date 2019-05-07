@@ -172,7 +172,7 @@ plot( img, gradImg, doCropping = TRUE, color.overlay = 'magma' )
 ```{python}
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-catimg = mpimg.imread( 'adorable-animal-blur-617278.jpg' )
+catimg = mpimg.imread( 'cat.jpg' )
 plt.imshow( catimg ) # an array type
 ```
 
@@ -357,9 +357,34 @@ plot( dnzImg )
 ## Image denoising: Python
 
 ```{python dnzpy}
-biasvec = np.linspace( 1, 2, 256*256 )
-biasFieldSim = ants.make_image( (256,256), biasvec )
-biasImg = pyimg * biasFieldSim
-n4corrected = ants.n4_bias_field_correction( biasImg,
-  shrink_factor = 4 )
+noizvec = np.random.randn( 256*256 ) * 10
+noizImg = ants.make_image( (256,256), noizvec )
+noizImg = pyimg + noizImg
+dnzImg = ants.denoise_image( noizImg,
+ shrink_factor = 1, p = 2, 
+ noise_model = 'Rician' )
 ```
+
+## Image denoising: Python Display Noise
+
+```{python dnzpynz}
+ants.plot( noizImg, crop=True )
+```
+
+## Image denoising: Python Display Denoised
+
+```{python dnzpydnz}
+ants.plot( noizImg, crop=True )
+```
+
+# Conclusions of this section
+
+* demonstration of very basic ideas in medical image analysis and quantification
+
+* we did not deal with distortion caused by $\phi$ - that will be covered later 
+
+* illustration of ANTs framework in R and python
+
+* good preparation for moving on to pairwise operations and, ultimately, group level operations
+
+* statistical analysis and prediction follow once all of these pieces are in place
