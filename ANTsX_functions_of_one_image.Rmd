@@ -173,6 +173,12 @@ plot( img, gradImg, doCropping = TRUE, color.overlay = 'magma' )
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 catimg = mpimg.imread( 'cat.jpg' )
+```
+
+
+## A typical image used in deep learning
+
+```{python}
 plt.imshow( catimg ) # an array type
 ```
 
@@ -249,11 +255,49 @@ $$
 
 Why is the order like this?
 
+## Apply transformations in ANTsR
+
+There are several ways to do this in ANTsR but see [this link](https://antsx.github.io/ANTsR/articles/antsrTransform.html)
+
+```{r rot}
+txStretch = createAntsrTransform( "AffineTransform", dim=2 )
+params = getAntsrTransformParameters( txStretch )
+params[1] = 0.8
+setAntsrTransformParameters(txStretch, params)
+cos45 = cos(pi*45/180)
+sin45 = sin(pi*45/180)
+txRotate <- createAntsrTransform( precision="float", 
+  type="AffineTransform", dim=2 )
+setAntsrTransformParameters( txRotate, 
+  c(cos45,-sin45,sin45,cos45,0,0) )
+setAntsrTransformFixedParameters(txRotate, c(128,128))
+rotateFirst = composeAntsrTransforms(list(txStretch, 
+                                          txRotate))
+order1 = applyAntsrTransform(rotateFirst, img, img)
+```
+
+## Apply transformations in ANTsR: Display
+
+```{r,echo=FALSE}
+plot( order1 )
+```
 
 ## Apply transformations in ANTsPy
 
-## Apply transformations in ANTsR
+There are several ways to do this in ANTsPy but see [this link](https://github.com/ANTsX/ANTsPy/blob/master/tutorials/Transform%20Generators.ipynb)
 
+```{python}
+rRotGenerator = ants.contrib.RandomRotate2D( ( 0, 40 ), reference=pyimg )
+rShearGenerator=ants.contrib.RandomShear2D( (0,15), reference=pyimg )
+tx1 = rRotGenerator.transform()
+tx2 = rShearGenerator.transform()
+rSrR = ants.compose_ants_transforms([tx1, tx2])
+```
+## Apply transformations in ANTsPy: Display
+
+```{python}
+ants.plot( rSrR.apply_to_image( pyimg ) )
+```
 
 ## Medical image acquisition is imperfect
 
@@ -374,10 +418,10 @@ ants.plot( noizImg, crop=True )
 ## Image denoising: Python Display Denoised
 
 ```{python dnzpydnz}
-ants.plot( noizImg, crop=True )
+ants.plot( dnzImg, crop=True )
 ```
 
-# Conclusions of this section
+## Conclusions of this section
 
 * demonstration of very basic ideas in medical image analysis and quantification
 
@@ -388,3 +432,4 @@ ants.plot( noizImg, crop=True )
 * good preparation for moving on to pairwise operations and, ultimately, group level operations
 
 * statistical analysis and prediction follow once all of these pieces are in place
+
