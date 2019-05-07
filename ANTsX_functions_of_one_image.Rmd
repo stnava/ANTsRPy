@@ -314,9 +314,9 @@ $$
 
 ## Image inhomogeneity or bias field
 
-- caused by FIXME
+- low frequency intensity distortion caused by several factors, including radiofrequency coil nonuniformity
 
-- can be mitigated by unsupervised methods such as N4 [@Tustison2012].
+- can be mitigated by unsupervised methods such as N4 (Tustison, et al.).
 
 - N4 has become a standard in the field due to its generality and practical successes in evaluation studies
 
@@ -365,7 +365,9 @@ n4corrected = ants.n4_bias_field_correction( biasImg,
 
 ## Image denoising: Background
 
-- caused by FIXME
+- noise in the reconstructed magnitude image used clinically, not the audible noise during acquisition ...
+
+- caused by inherent physical interactions between the subject and receiving coil among other things
 
 - can be mitigated by unsupervised methods that empirically estimate noise models
 
@@ -391,6 +393,7 @@ dnzImg = denoiseImage( noizImg, shrinkFactor = 1, p = 2,
 ```{r,echo=FALSE}
 plot( noizImg )
 ```
+
 ## Image denoising: Corrected
 
 ```{r,echo=FALSE}
