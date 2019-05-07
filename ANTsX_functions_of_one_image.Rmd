@@ -423,13 +423,12 @@ ants.plot( dnzImg, crop=True )
 
 ## Conclusions of this section
 
-* demonstration of very basic ideas in medical image analysis and quantification
+* demonstration of very basic ideas in medical image analysis and quantification via R and python
+
+* most of these examples are functions of one image variable ie $f(x)$ ...
 
 * we did not deal with distortion caused by $\phi$ - that will be covered later 
-
-* illustration of ANTs framework in R and python
 
 * good preparation for moving on to pairwise operations and, ultimately, group level operations
 
 * statistical analysis and prediction follow once all of these pieces are in place
-
