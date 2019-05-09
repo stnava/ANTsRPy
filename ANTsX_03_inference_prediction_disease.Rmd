@@ -1,0 +1,130 @@
+---
+title: 'Inference, prediction and the study of disease with ANTsX'
+author: "Avants, Tustison"
+date: "5/6/2019"
+output: 
+  beamer_presentation:
+    colortheme: "dolphin"
+urlcolor: blue
+---
+
+
+```{r,eval=TRUE,echo=FALSE}
+library(reticulate)
+matplotlib <- import("matplotlib")
+matplotlib$use("Agg", force = TRUE)
+evalpy = TRUE
+evalR = !evalpy
+```
+
+
+## Pattern theory: Inference and disease testing
+
+> Within the anatomy $(\Omega, \mathcal{T}, \mathcal{I}, \mathcal{P})$, perform Bayesian
+classification and testing for disease and anomaly.
+
+* We defined $\Omega$ ( the background space ) as a template image.
+
+* This template space was based on minimizing metrics in the diffeomorphic space, $\mathcal{T}$, with respect to the image population.
+
+* The images, $\{ I_i \}$, are given.  We have to live with them which is why we denoise, bias correct, truncate intensities, etc.
+
+* Our probability spaces are determined by observed data.  Only recently do imaging data collection efforts  target broad sampling of natural biological variability, including disease.  
+    * Hypothesis-driven studies still dominate.
+    * Data-driven / discovery research has made inroads but may not yet be well-powered.
+
+## Inference and disease testing in the age of deep learning
+
+* Our problem, in medical imaging/health care, is similar to the self-driving car problem.
+    * we want to move quickly but caution/safety remains primary.
+    * in contrast to Tesla, we lack data and often lack well-defined ground truth.
+* The FDA released well-informed guidance on how we should proceed with introducing "AI" into the clinic.
+    * Paradigm shift: notes the need for on-line testing and "real-time" model updates - *not instant perfection*
+    * Pioneers:  Kheiron in mammography; Viz.ai in stroke.
+    * Both companies use deep learning to deal with well-defined problems within well-defined business/profit models.
+    
+* Our work is, currently, breadth-focused: [`ANTsRNet`](https://github.com/ANTsX/ANTsRNet). 
+
+## Three classes of deep learning applications in MI
+
+1. Easy:  Segmentation, some forms of super-resolution (SR).
+    * Various forms of U-Nets (segmentation) and other convolutional networks (SR).
+    * Common between segmentation and SR: data is either readibly available or very amenable to augmentation.
+
+2. Everything else is hard but this class is less so: Regression and classification of common patient characteristics.
+    * Predict "brain age" from MR imaging ( a regression problem );
+        * ResNets; VGG; Inception, etc.
+    * Classify common diseases from large imaging datasets.
+        * ChexNet/DenseNets, ResNets, VGG, Inception.
+
+3. Interpretable discovery research with deep learning.
+    * Difficult, not cost-effective if the problem is not acute.
+    * PTSD, FTLD, TBI, effects of poverty, pre-symptomatic AD, pre-symptomatic psychiatric disorders, etc.
+
+
+## Introductory lesson for deep learning $+$ pattern discovery
+
+* A quick study of Alzheimer's disease (AD) and related disorders
+
+* We will base the analysis on "brain age" which is a method that uses anatomical MRI to predict the difference between the brain's "age" and the patient's chronological age.
+    * not as well-founded as telomere length
+    * nevertheless, lots of papers on this topic - currently "popular."
+    * probably means it will be forgotten soon.
+    
+* Use this model to not only study the "brain age gap" as an outcome but also for its features which can be used for other purposes.
+
+## Deep learning for Brain Age study of AD
+
+1. Assemble a "large" dataset of control subjects.
+
+2. Perform some relatively minimal processing on these data.
+    * usually bias correction, affine registration and segmentation
+    * we just do bias correction and brain-based affine registration
+        * if useful, we can demo the brain extraction example [HERE](FIXME).
+
+3. Construct a deep, convolutional regression network to predict the patient's age.
+    * in fact, we predict gender (sex?) as well, in addition to the data collection site
+    * we use a two input, three output ResNet for this purpose: BrainAge$^+$
+    * ResNets alleviate the "vanishing gradient" problem and that's all we need to know for this purpose.
+
+4. Investigate how this control-based BrainAge model gives us insight into Alzheimer's disease.
+    * realistically, quite a long, difficult project.  
+    * we will try to make it look easy.
+    
+## Large dataset of control subjects
+
+## Minimal data processing
+
+## ResNet for BrainAge$^+$
+
+* ResNet
+
+## Basic statistical inference on Brain Age Gap
+
+## Embedding functions of this model
+
+## Class-specific activation maps 
+
+## Other directions of research with the BrainAge$^+$ network
+
+* add more data to the training dataset
+    * current model "fails" in subjects under 18
+    * probably fails elsewhere if we looked carefully
+    * "fix" these issues by brute force
+
+* we do not yet know the "edge cases" for this type of work or even how to properly define them
+    * these are critical to understanding the model and the underlying biological variability as a function of the presence or absence of disease(s)
+        * building conditional models w/o understanding all the conditions is challenging
+    * briefly discuss amyloid classification
+
+* more work is needed for longitudinal brain age
+    * vast amounts of background work on faces provide guidance here
+    * cross-sectional "age" is not the same as age conditioned on subject ID
+
+* our main interest in this network, originally, had nothing to do with brain age.
+
+## Conclusions of this section
+
+* ANTs in R and Python is, in some sense, an attempt to democratize access to pattern theory.
+
+* We demonstrated, in these slides, a few key steps ...

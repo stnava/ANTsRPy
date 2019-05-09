@@ -35,8 +35,8 @@ Most of our studies go beyond anatomy although the anatomical components remain 
 
 This defines the pairwise problem on which we will focus in this section.\newline
 
-> Given any two elements $I, J \in \mathcal{I}$ in the same homogeneous anatomy $(\Omega, \mathcal{H}, \mathcal{I})$,
-compute diffeomorphisms $\phi$ from one anatomy to the other. 
+> Given any two elements $I, J \in \mathcal{I}$ in the same homogeneous anatomy $(\Omega, \mathcal{T}, \mathcal{I})$,
+compute diffeomorphisms $\phi \in  \mathcal{T}$ from one anatomy to the other. 
 
 The majority of ANTs users employ "symmetric normalization" aka SyN to compute such maps.\newline
 
@@ -51,7 +51,7 @@ Examples of "large deformation" transforms: [C](https://github.com/stnava/C),  [
 
 This defines the group-level problem(s) that we will study later.\newline
 
-> Given populations of anatomical imagery and diffeomorphisms between them $\{I_1, \cdots, I_n \}$ generate probability laws $P \in \mathcal{P}$ on $\mathcal{H}$ that represent the anatomical variation reflected by the
+> Given populations of anatomical imagery and diffeomorphisms between them $\{I_1, \cdots, I_n \}$ generate probability laws $P \in \mathcal{P}$ on $\mathcal{T}$ that represent the anatomical variation reflected by the
 observed population of diffeomorphisms $\{\phi_1, \cdots, \phi_n \}$.
 
 The idea of "templates" in embedded in the statement above and we will revisit that later.
@@ -62,7 +62,7 @@ Here is an advanced example of this type of analysis: [diffeomorphometry/isa](ht
 
 Here are the scientific questions:\newline
 
-> Within the anatomy $(\Omega, \mathcal{H}, \mathcal{I}, \mathcal{P})$, perform Bayesian
+> Within the anatomy $(\Omega, \mathcal{T}, \mathcal{I}, \mathcal{P})$, perform Bayesian
 classification and testing for disease and anomaly.
 
 Perhaps the broadest of the ideas and where the most practical work is needed.  Clearly, genomics, transcriptomics and interaction with environment/experience must play a central role.

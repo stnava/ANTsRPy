@@ -172,7 +172,7 @@ plot( img, gradImg, doCropping = TRUE, color.overlay = 'magma' )
 ```{python}
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-catimg = mpimg.imread( 'cat.jpg' )
+catimg = mpimg.imread( "/Users/stnava/Downloads/cat.jpg" )
 ```
 
 

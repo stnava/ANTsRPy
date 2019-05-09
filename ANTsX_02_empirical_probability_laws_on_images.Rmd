@@ -1,0 +1,121 @@
+---
+title: 'Empirical estimation of population distributions with ANTsX'
+author: "Avants, Tustison"
+date: "5/6/2019"
+output: 
+  beamer_presentation:
+    colortheme: "dolphin"
+urlcolor: blue
+---
+
+
+```{r,eval=TRUE,echo=FALSE}
+library(reticulate)
+matplotlib <- import("matplotlib")
+matplotlib$use("Agg", force = TRUE)
+evalpy = TRUE
+evalR = !evalpy
+```
+
+
+## Pattern theory
+
+ANTs is a practical framework that seeks to implement the theory outlined by Grendander and extended by Miller and Mumford.\newline
+
+1. Large deformation maps: $\checkmark$
+
+2. Empirical probability laws: _this section_
+
+3. Inference and disease testing: _later_
+
+## 2. Computation of empirical probability laws
+
+This defines the group-level problem(s) that we will study here.\newline
+
+> Given populations of anatomical imagery and diffeomorphisms between them $\{I_1, \cdots, I_n \}$ generate probability laws $P \in \mathcal{P}$ on $\mathcal{H}$ that represent the anatomical variation reflected by the observed population of diffeomorphisms $\{\phi_1, \cdots, \phi_n \}$.
+
+The idea of "templates" in embedded in the statement above and we will discuss this soon.
+
+Here is an advanced example of this type of analysis: [diffeomorphometry/isa](https://github.com/stnava/isa).
+
+
+## 2. Computation of empirical probability laws
+
+What did we see already that will help with this?
+
+1. Anatomical imagery and diffeomorphisms: `antsImageRead` and `antsRegistration`
+
+2. Anatomical variation reflected by the observed population of diffeomorphisms:
+    * `antsCreateJacobianDeterminantImage` and matrix representations;
+    * (in ISA/DiGPA) dimensionality reduction methods applied to deformation matrices ;
+
+What else do we need?
+
+
+## 2. Computation of empirical probability laws: Compute a mean image
+
+What is the mean of an observed image population?
+
+* Average all images before registration?
+
+* Average all images after registration?
+    - if we do this, to which image do we register?
+    
+* Compute an empirical mean?
+    - good solution but we need distances for this ...
+    - image intensity distributions are not simple, gaussian models ...
+    - this is the idea of a "group template" 
+
+
+## Metrics for pattern analysis in medical imaging
+
+* Intensity metric:  Let's not make this complicated and just stick with the euclidean distance after intensity normalization.
+    * in practice, the "best" templates are computed by other approaches
+    * however, this works ok.
+
+* Shape metric:  Based on theory of diffeomorphisms ( see seminal work by V Arnol'd ), the distance metric is defined by the solution to a minimization problem.  Find the velocity field $v$ that minimizes:
+
+$$ D( \text{Id}, \phi) = \int_0^1 \| v( \phi(x,t), t ) \|_L dt $$
+subject to: $\phi(0)=\text{Id} ;  \phi(1)=\int_0^1 v(\phi(x,t),t) dt = \phi_1$.
+
+In image registration, we replace these endpoints with a metric such as $\| I - J(\phi_1)\|^2$.
+
+## Build a template subject to these metrics
+
+code here
+
+
+
+## Construct priors in the template space
+
+code here
+
+
+## Repeat the population study, given this representation
+
+code here
+
+## Use PCA to compute shape probabilities
+
+
+## Use PCA to compute shape probabilities
+
+* the template is not a "true mean" wrt the PCA space.
+
+* just one way in which the theory is broken in this (perhaps still useful) example.
+
+## Conclusions of this section
+
+* ANTs in R and Python is, in some sense, an attempt to democratize access to pattern theory.
+
+* We demonstrated, in these slides, a few key steps that are essential to unlocking the powers of pattern theory:
+    * use "distances" to guide computation of empirical means of images;
+    * generate priors in this space;
+    * use PCA to define an empirical probability space:
+        * any other ideas about how we might do this?
+    * inference on such representations and rudimentary statistical testing.
+
+* more detailed example: [isa example](https://github.com/stnava/isa); also see various eigenanatomy examples.
+
+* **next** $=$ use deep learning to aid the third step: Inference and disease testing _and prediction_.
+
