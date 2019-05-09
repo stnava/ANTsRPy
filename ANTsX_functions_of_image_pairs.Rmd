@@ -121,7 +121,7 @@ $x$ - point in domain $\Omega$
 
 $\phi$ - transform of $\Omega$ with parameters $p$
 
-$M$ - the "image similarity metric"
+$M$ - the "image similarity metric" ( see [`help( ants.image_similarity )`](https://antsx.github.io/ANTsRCore/reference/imageSimilarity.html) )
 
 see **WBIR\_2012** keynote presentation for more details ...
 
@@ -402,6 +402,7 @@ mi6 = ants.image_read( ants.get_ants_data('r85'))
 mi6 = ants.image_math( mi5, "GE", 1 )
 ```
 
+We should plot these images ...
 
 ## Population study: Registration and quantification
 
@@ -498,6 +499,7 @@ ants.plot( ref, vizimg )
 
 * demonstration of the practice of segmentation and registration of medical image and quantification via R and python
 
-* next steps: templates, more modern statistical approaches, anatomical labeling ... ultimately, machine learning and/or deep learning.
+* next step detailed examples: [isa example](https://github.com/stnava/isa) or [joint structure function analysis](https://github.com/stnava/structuralFunctionalJointRegistration).
 
-* another good step from here is the [isa example](https://github.com/stnava/isa).
+* beyond: templates, more modern statistical approaches, anatomical labeling ... ultimately, machine learning and/or deep learning.
+
