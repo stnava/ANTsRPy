@@ -123,6 +123,23 @@ classification and testing for disease and anomaly.
 
 * our main interest in this network, originally, had nothing to do with brain age.
 
+
+## Other directions of research beyond structural MRI
+
+* SyMILR
+
+* Tensor-based studies
+
+* Longitudinal versions of above
+
+* Longitudinal deep learning
+
+* Novel similarity metrics based on very large datasets
+    * supervised and unsupervised
+    
+* New "registration" paradigms that redefine what it means to "normalize" data ....
+
+
 ## Conclusions of this section
 
 * ANTs in R and Python is, in some sense, an attempt to democratize access to pattern theory.

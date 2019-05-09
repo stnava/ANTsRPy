@@ -1,5 +1,5 @@
 ---
-title: 'ANTsX: R and Python Introduction to $f(x)$ Medical Image Analysis'
+title: 'ANTsX: R and Python Introduction to Medical Image Analysis'
 author: "Avants, Tustison"
 date: "5/6/2019"
 output: 
@@ -172,7 +172,7 @@ plot( img, gradImg, doCropping = TRUE, color.overlay = 'magma' )
 ```{python}
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-catimg = mpimg.imread( "/Users/stnava/Downloads/cat.jpg" )
+catimg = mpimg.imread( "./cat.jpg" )
 ```
 
 
@@ -287,8 +287,10 @@ plot( order1 )
 There are several ways to do this in ANTsPy but see [this link](https://github.com/ANTsX/ANTsPy/blob/master/tutorials/Transform%20Generators.ipynb)
 
 ```{python}
-rRotGenerator = ants.contrib.RandomRotate2D( ( 0, 40 ), reference=pyimg )
-rShearGenerator=ants.contrib.RandomShear2D( (0,15), reference=pyimg )
+rRotGenerator = ants.contrib.RandomRotate2D( ( 0, 40 ), 
+  reference=pyimg )
+rShearGenerator=ants.contrib.RandomShear2D( (0,15), 
+  reference=pyimg )
 tx1 = rRotGenerator.transform()
 tx2 = rShearGenerator.transform()
 rSrR = ants.compose_ants_transforms([tx1, tx2])
@@ -382,7 +384,8 @@ see [doi: 10.1002/jmri.22003.](https://www.ncbi.nlm.nih.gov/pubmed/20027588)
 The model produces an additive field that gives $I_\text{true} = I_\text{MRI} - I_\text{noise}$
 
 ```{r dnzr}
-noizImg = ri( 1 ) + makeImage( c(256,256), rnorm( 256^2, 0, 10 ) )
+noizImg = ri( 1 ) + makeImage( c(256,256), 
+                               rnorm( 256^2, 0, 10 ) )
 dnzImg = denoiseImage( noizImg, shrinkFactor = 1, p = 2, 
                        noiseModel = 'Rician' )
 ```
