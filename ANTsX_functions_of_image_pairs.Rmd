@@ -247,7 +247,7 @@ myjac = ants.create_jacobian_determinant_image(
   pfixed, diffeo[ 'fwdtransforms'][0] )
 ```
 
-Should be $\gt 0$ for diffeomorphic maps in medical imaging.
+Should be greater than zero for diffeomorphic maps in medical imaging.
 
 ## Deformable registration: Jacobian
 
