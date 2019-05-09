@@ -276,6 +276,7 @@ ants.plot( mywarpedgrid )
 ```
 
 
+more introductory registration content can be found [here](https://github.com/stnava/ANTsTutorial/blob/master/registration/antsRegistrationIntro.Rmd)
 
 ## K-means segmentation
 
