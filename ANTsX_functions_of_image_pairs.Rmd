@@ -1,0 +1,502 @@
+---
+title: 'Toward Integrative Pattern Theory: Practical, quantitative comparison of biomedical image pairs with ANTsX'
+author: "Avants, Tustison"
+date: "5/6/2019"
+output: 
+  beamer_presentation:
+    colortheme: "dolphin"
+urlcolor: blue
+---
+
+
+```{r,eval=TRUE,echo=FALSE}
+library(reticulate)
+matplotlib <- import("matplotlib")
+matplotlib$use("Agg", force = TRUE)
+evalpy = TRUE
+evalR = !evalpy
+```
+
+
+## Pattern theory
+
+ANTs is a practical framework that seeks to implement the theory outlined by Grendander and extended by Miller and Mumford.\newline
+
+  > Ulf Grenander and Michael I. Miller. "Computational anatomy: An emerging discipline."
+  >
+  > `r tufte::quote_footer('--- Quarterly of applied mathematics 56.4 (1998)')`
+
+"There are three principal components to computational anatomy studied herein."
+
+Most of our studies go beyond anatomy although the anatomical components remain essential to the remaining steps.
+
+
+## 1. Computation of large deformation maps
+
+This defines the pairwise problem on which we will focus in this section.\newline
+
+> Given any two elements $I, J \in \mathcal{I}$ in the same homogeneous anatomy $(\Omega, \mathcal{H}, \mathcal{I})$,
+compute diffeomorphisms $\phi$ from one anatomy to the other. 
+
+The majority of ANTs users employ "symmetric normalization" aka SyN to compute such maps.\newline
+
+> Avants, Epstein and Gee, Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain.
+> 
+> `r tufte::quote_footer('--- Medical Image Analysis (2008).')`
+
+Examples of "large deformation" transforms: [C](https://github.com/stnava/C),  [cars](https://github.com/stnava/cars).
+
+
+## 2. Computation of empirical probability laws
+
+This defines the group-level problem(s) that we will study later.\newline
+
+> Given populations of anatomical imagery and diffeomorphisms between them $\{I_1, \cdots, I_n \}$ generate probability laws $P \in \mathcal{P}$ on $\mathcal{H}$ that represent the anatomical variation reflected by the
+observed population of diffeomorphisms $\{\phi_1, \cdots, \phi_n \}$.
+
+The idea of "templates" in embedded in the statement above and we will revisit that later.
+
+Here is an advanced example of this type of analysis: [diffeomorphometry/isa](https://github.com/stnava/isa).
+
+## 3. Inference and disease testing
+
+Here are the scientific questions:\newline
+
+> Within the anatomy $(\Omega, \mathcal{H}, \mathcal{I}, \mathcal{P})$, perform Bayesian
+classification and testing for disease and anomaly.
+
+Perhaps the broadest of the ideas and where the most practical work is needed.  Clearly, genomics, transcriptomics and interaction with environment/experience must play a central role.
+
+Medical images play a unique role in that they capture in-depth measurements of structure and function and how these change over the lifespan.
+
+A [2D neurodegeneration study](https://rstudio-pubs-static.s3.amazonaws.com/296018_0b257518b2a5483eb205c66392795a2a.html).
+
+
+## 3. Inference and disease testing
+
+Pattern theory builds on old ideas:\newline
+
+> A grand and almost untrodden field of inquiry will be opened, on the causes and laws of variation, on correlation of growth, on the effects of use and disuse, on the direct action of external conditions, and so forth.  
+> 
+> `r tufte::quote_footer('--- Darwin, Origin of Species (1859).')`
+
+
+This is where most of our current work is centered within the context of both "discovery" as well as hypothesis-driven research.
+
+## Toward metrics and pattern analysis in medical imaging
+
+* Pairwise comparisons are a core piece of traditional medical image processing:\newline
+    * $P( I | J )$ - probability of one image, given the other
+    * $\| I - J(T(x)) \|^2$ - euclidean difference of two images, given a spatial transformation
+    * $MI( I, J(T(x)))$ - mutual information between two images, given a spatial transformation
+    * $D( \mathbb{I}, T )$ - distance of a transform from the identity, $\mathbb{I}$\newline
+
+* Both registration and segmentation rely on measuring distances (or pseudo-distances) between reference distributions / examples and new data.
+
+
+## Toward metrics in medical image analysis: Registration
+
+
+* __Registration__: mapping a known coordinate system onto a target space
+    * Derives from the need to register artillery to targets
+    * Bajcsy et al performed perhaps the first (deformable) registration in medical imaging ($\approx$ 1980)
+    * Differentiable maps with differentiable inverse provide metric spaces and allow interpretable statistics (further down the analysis road)
+    * driven by three components ( in ITK / ANTs ): transform (which includes regularization), similarity metric, optimizer
+
+* Let us quickly look at how we do registration in ANTs.
+
+## Toward metrics in medical image analysis: The optimization problem
+
+Find mapping $\phi(x,p) \in \mathcal{T}$ such that:
+
+$$
+M( I, J, \phi( x, p ))
+$$
+
+is minimized.
+
+$I, J$ - images
+
+$x$ - point in domain $\Omega$
+
+$\phi$ - transform of $\Omega$ with parameters $p$
+
+$M$ - the "image similarity metric"
+
+see **WBIR\_2012** keynote presentation for more details ...
+
+## ANTsR and ANTsPy imports
+
+- In python, we import libraries:
+
+```{python imp,eval=evalpy}
+import ants
+```
+
+- in R, we call `library` or `require` to do the same thing:
+
+```{r rimp,message=FALSE,warning=FALSE}
+library( ANTsR )
+require( ANTsR )
+```
+
+
+
+## Linear registration: Applications
+
+* "Low-dimensional" registration accounts for differences in patient position across different scans.
+
+* Correct for rigid motion in a functional scan over time ( motion correction ).
+
+* We also use this to compute differences in scale between populations.
+
+```{r linearregistration1}
+fixed = ri( 1 )
+moving = ri( 5 )
+translation = antsRegistration( fixed, moving, 
+  typeofTransform = "Translation" )
+print( paste( 
+  antsImageMutualInformation( fixed, moving ),
+  antsImageMutualInformation( fixed, 
+  translation$warpedmovout ) ))
+# metrics minimize!
+```
+
+## Linear registration: Example code
+
+```{r linearregistration2}
+plot( fixed, moving, alpha = 0.5 )
+```
+
+## Linear registration: Example code
+
+```{r linearregistration3}
+plot( fixed, translation$warpedmovout, alpha = 0.5 )
+```
+
+## Linear registration: Example code Tx I/O
+
+```{r linearregistration4}
+mytx = readAntsrTransform( translation$fwdtransforms )
+print( mytx )
+print( getAntsrTransformParameters( mytx  ) )
+```
+
+
+## Linear registration: Python Example code
+
+```{python  linearregistration1p,eval=evalpy}
+pfixed = ants.image_read( ants.get_ants_data( "r16" ) )
+pmoving = ants.image_read( ants.get_ants_data( "r64" ) )
+ptranslation = ants.registration( pfixed, pmoving,
+  "Translation" )
+print(ants.image_mutual_information( pfixed, pmoving ) )
+print( ants.image_mutual_information( pfixed, 
+  ptranslation['warpedmovout']) )
+# metrics minimize!
+```
+
+## Linear registration: Python Example code Tx I/O
+
+```{python  linearregistration2p,eval=evalpy}
+mytx = ants.read_transform( 
+  ptranslation['fwdtransforms'][0] )
+print( mytx )
+print( ants.get_ants_transform_parameters( mytx ) )
+```
+
+
+## Nonlinear registration: Application
+
+* "High-dimensional" registration accounts for differences in patient anatomy across subjects.
+
+* Accounts for geometric distortions between different modalities.
+
+* Provides quantitative measurements of shape, growth, atrophy, etc.
+
+* Close to the intended models of pattern theory.
+
+
+## Nonlinear registration: Basic Code
+
+```{python  defreg4,eval=evalpy}
+diffeo = ants.registration( pfixed, pmoving, "SyN" )
+print( ants.image_mutual_information( pfixed, 
+  diffeo['warpedmovout']) )
+ants.image_read(  
+  diffeo[ 'fwdtransforms'][0]  ) # the deformation field
+```
+
+## Nonlinear registration: Basic Code (R)
+
+```{r  defreg4r,eval=evalR}
+rdiffeo = antsRegistration( fixed, moving,
+  typeofTransform = "SyN" )
+print( antsImageMutualInformation( fixed, 
+  rdiffeo$warpedmovout ) )
+```
+
+## Deformable registration: Jacobian
+
+In medical imaging, "the jacobian" is the determinant of the deformation gradient.
+
+Suppose that $\phi(x) = y = x + u(x)$, then $\mathcal(J)(x) = \text{Det}(\frac{\partial u}{\partial x})$.
+
+```{python  defreg5,eval=evalpy}
+myjac = ants.create_jacobian_determinant_image( 
+  pfixed, diffeo[ 'fwdtransforms'][0] )
+```
+
+Should be $\gt 0$ for diffeomorphic maps in medical imaging.
+
+## Deformable registration: Jacobian
+
+```{python  defreg5b,echo=FALSE,eval=evalpy}
+ants.plot( myjac )
+```
+
+## Deformable registration: Grid
+
+This is a deformed grid that lets us see the "shape" of the deformation 
+by appling it to a regular grid.
+
+```{python  defreg6,eval=evalpy}
+mywarpedgrid = ants.create_warped_grid( pfixed, 
+  grid_directions=(True,True),
+  transform=diffeo['fwdtransforms'][0], 
+  fixed_reference_image=pfixed )
+```
+
+A traditional, easy way to inspect a deformation result.
+
+## Deformable registration: Grid
+
+```{python  defreg6b,echo=FALSE,eval=evalpy}
+ants.plot( mywarpedgrid )
+```
+
+
+
+## K-means segmentation
+
+Segmentation is a second key aspect of quantification in medical imaging.
+
+"Tissue segmentation" is the simplest form of segmentation where we separate "tissue classes" by their intensity levels. In the brain, we simplify to 3 classes: cerebrospinal fluid, gray matter and white matter.  ANTs segmentation provides a probabilistic output.
+
+```{python kseg,eval=evalpy}
+fi = ants.n3_bias_field_correction( pfixed, 2)
+seg = ants.kmeans_segmentation( fi, 3)
+```
+
+## K-means segmentation: Visualize GM probability
+
+```{python ksegm,echo=FALSE,eval=evalpy}
+ants.plot( seg['probabilityimages'][1] )
+```
+
+## Prior-based segmentation: Combines registration with probabilistic segmentation
+
+K-means often fails to produce consistent results in part because the method is sensitive 
+to initialization.
+
+We mitigate this with prior probability models by combining registration with segmentation in a Bayesian formulation.
+
+```{python kseg1,eval=evalpy}
+csfPrior = ants.apply_transforms( pfixed, 
+  seg['probabilityimages'][0], 
+  diffeo['invtransforms'] )
+gmPrior = ants.apply_transforms( pfixed, 
+  seg['probabilityimages'][1], 
+  diffeo['invtransforms'] )
+wmPrior = ants.apply_transforms( pfixed, 
+  seg['probabilityimages'][2], 
+  diffeo['invtransforms'] )
+```
+
+
+## Prior-based segmentation: Combines registration with probabilistic segmentation
+
+```{python kseg2,eval=evalpy}
+priors = [ csfPrior, gmPrior, wmPrior ]
+movmask = ants.get_mask( pmoving )
+priorseg = ants.prior_based_segmentation(
+  pmoving, priors, movmask, 
+  0.25, # prior weight, typically 0 to 0.5
+  0.1,  # MRF term
+  15 )   # iterations
+```
+
+## Prior-based segmentation: Combines registration with probabilistic segmentation
+
+```{python kseg2params2,eval=evalpy}
+priorseg2 = ants.prior_based_segmentation(
+  pmoving, priors, movmask, 
+  0.0, # prior weight, typically 0 to 0.5
+  0.1,  # MRF term
+  15 )   # iterations
+```
+
+## Prior-based segmentation: Plot probabilistic segmentation
+
+```{python kseg2p,eval=evalpy}
+ants.plot( priorseg[ 'segmentation' ] )
+```
+
+
+## Prior-based segmentation: Plot GM probability
+
+```{python kseg3p,eval=evalpy}
+ants.plot( priorseg[ 'probabilityimages' ][1] )
+```
+
+## Prior-based segmentation: Plot probabilistic segmentation, low prior weight
+
+```{python kseg4p,eval=evalpy}
+ants.plot( priorseg2[ 'segmentation' ] )
+```
+
+
+## Thickness: A biologically relevant derived measurement
+
+Cortical thickness is an approximate measurement of the 
+depth of the cortical layer as measured along a geodesic 
+path connecting the white matter to gray matter interface
+to the gray matter to CSF interface.
+
+It has demonstrated relationships to health, disease and 
+normal variability, including gender differences.
+
+```{python kk,eval=evalpy}
+thick = ants.kelly_kapowski(
+  s=priorseg['segmentation'], 
+  g=priorseg['probabilityimages'][1],
+  w=priorseg['probabilityimages'][2], 
+  its = 45, r = 0.25, m = 1 )
+```
+
+
+## Thickness visualization
+
+We can study variability of this measurement statistically ( later ).
+
+```{python kkviz,eval=evalpy}
+ants.plot( pmoving, thick, cbar=True, 
+  title='KK Thickness Overlay' )
+```
+
+## Population study: Collection
+
+We build a population from built-in data.
+
+```{python popstudy,eval=evalpy}
+ref = ants.image_read( ants.get_ants_data('r16'))
+mi = ants.image_read( ants.get_ants_data('r27'))
+mi2 = ants.image_read( ants.get_ants_data('r30'))
+mi3 = ants.image_read( ants.get_ants_data('r62'))
+mi4 = ants.image_read( ants.get_ants_data('r64'))
+mi4 = ants.image_math( mi4, "GE", 2 )
+mi5 = ants.image_read( ants.get_ants_data('r85'))
+mi5 = ants.image_math( mi5, "GE", 2 )
+mi6 = ants.image_read( ants.get_ants_data('r85'))
+mi6 = ants.image_math( mi5, "GE", 1 )
+```
+
+
+## Population study: Registration and quantification
+
+Run the registration and compute the jacobian for each subject.
+
+```{python popstudy2,eval=evalpy}
+refmask = ants.get_mask( ref ).image_math( "ME", 20 )
+ilist = [mi,mi2,mi3,mi4,mi5,mi6]
+jlist = [None]*len(ilist)
+for i in range(len(ilist)):
+  ilist[i] = ants.iMath(ilist[i],'Normalize')
+  mytx = ants.registration(fixed=ref , moving=ilist[i] ,
+    typeofTransform = ('SyN') )
+  ilist[i] = mytx[ 'warpedmovout' ]
+  jlist[i] = ants.create_jacobian_determinant_image( 
+    ref, mytx[ 'fwdtransforms'][0] )
+```
+
+
+## Population study: The mask
+
+```{python popstudymask,eval=evalpy}
+ants.plot( ref, refmask, overlay_alpha=0.5 )
+```
+
+## Population study: Convert to a matrix
+
+Matrix representations $\rightarrow$ statistics and math.
+
+```{python popstudy3,eval=evalpy}
+matI = ants.image_list_to_matrix( ilist, 
+  refmask )
+matJ = ants.image_list_to_matrix( jlist, 
+  refmask )
+```
+
+The mask defines the number of columns and the
+location in the image.
+
+## Population study: Statistical mapping preparation
+
+Provide the population labels.  Create a data frame to store this information.
+
+```{python popstudy4,eval=evalpy}
+import numpy as np
+import pandas as pd
+popLabels = ( 0, 0, 0, 1, 1, 1 )
+nsub = len( ilist )
+mu, sigma = 0, 1
+# simulate a covariate
+covar = np.random.normal( mu, sigma, nsub )
+data = {'covar':covar,'outcome':popLabels}
+df = pd.DataFrame( data )
+```
+
+## Population study: Statistical mapping with ILR
+
+image-based linear regression can use image data as predictors, outcomes, etc 
+through a very simple formula interface.
+
+in the end, though, it's still just a linear regression.
+
+```{python popstudy5,eval=evalpy}
+vlist = { "matI": matI, "matJ": matJ }
+myformula = " matJ ~ outcome + matI "
+result = ants.ilr( df, vlist, myformula )
+```
+
+## Show some coefficients on the reference image / template
+
+```{python ilrviz0}
+mycoef = result['coefficientValues']['coef_outcome']
+vizimg = ants.make_image( refmask,
+  mycoef ).smooth_image( 1.5 )
+print( vizimg.max() )
+print( vizimg.min() )
+```
+
+## Show some coefficients on the reference image / template
+
+```{python ilrviz1}
+ants.plot( ref, vizimg )
+```
+
+## Conclusions of this section
+
+* ANTs in R and Python is, in some sense, an attempt to democratize access to pattern theory.
+
+* We demonstrated, in these slides, a few key steps that are essential to unlocking the powers of pattern theory:
+    * pair wise geometric transformations (image registration)
+    * pair wise sharing of information ( priors )
+    * images in matrix representations
+    * inference on such representations and rudimentary statistical testing
+
+* demonstration of the practice of segmentation and registration of medical image and quantification via R and python
+
+* next steps: templates, more modern statistical approaches, anatomical labeling ... ultimately, machine learning and/or deep learning.
+
+* another good step from here is the [isa example](https://github.com/stnava/isa).
