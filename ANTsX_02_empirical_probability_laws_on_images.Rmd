@@ -9,11 +9,12 @@ urlcolor: blue
 ---
 
 
-```{r,eval=TRUE,echo=FALSE}
+```{r,eval=TRUE,echo=FALSE,warning=F,message=F}
 library(reticulate)
+library( ANTsR )
 matplotlib <- import("matplotlib")
 matplotlib$use("Agg", force = TRUE)
-evalpy = TRUE
+evalpy = FALSE
 evalR = !evalpy
 ```
 
@@ -32,9 +33,9 @@ ANTs is a practical framework that seeks to implement the theory outlined by Gre
 
 This defines the group-level problem(s) that we will study here.\newline
 
-> Given populations of anatomical imagery and diffeomorphisms between them $\{I_1, \cdots, I_n \}$ generate probability laws $P \in \mathcal{P}$ on $\mathcal{H}$ that represent the anatomical variation reflected by the observed population of diffeomorphisms $\{\phi_1, \cdots, \phi_n \}$.
+> Given populations of anatomical imagery and diffeomorphisms between them $\{I_1, \cdots, I_n \}$ generate probability laws $P \in \mathcal{P}$ on $\mathcal{T}$ that represent the anatomical variation reflected by the observed population of diffeomorphisms $\{\phi_1, \cdots, \phi_n \}$.
 
-The idea of "templates" in embedded in the statement above and we will discuss this soon.
+The idea of "templates" is embedded in the statement above and we will discuss this soon.
 
 Here is an advanced example of this type of analysis: [diffeomorphometry/isa](https://github.com/stnava/isa).
 
@@ -43,7 +44,7 @@ Here is an advanced example of this type of analysis: [diffeomorphometry/isa](ht
 
 What did we see already that will help with this?
 
-1. Anatomical imagery and diffeomorphisms: `antsImageRead` and `antsRegistration`
+1. Anatomical imagery and diffeomorphisms: `antsImageRead` and `antsRegistration` with $SyN$.
 
 2. Anatomical variation reflected by the observed population of diffeomorphisms:
     * `antsCreateJacobianDeterminantImage` and matrix representations;
@@ -62,9 +63,9 @@ What is the mean of an observed image population?
     - if we do this, to which image do we register?
     
 * Compute an empirical mean?
-    - good solution but we need distances for this ...
-    - image intensity distributions are not simple, gaussian models ...
     - this is the idea of a "group template" 
+    - good solution but we need distances for this ...
+    - image intensity distributions may not be simple, gaussian models ...
 
 
 ## Metrics for pattern analysis in medical imaging
@@ -75,34 +76,239 @@ What is the mean of an observed image population?
 
 * Shape metric:  Based on theory of diffeomorphisms ( see seminal work by V Arnol'd ), the distance metric is defined by the solution to a minimization problem.  Find the velocity field $v$ that minimizes:
 
-$$ D( \text{Id}, \phi) = \int_0^1 \| v( \phi(x,t), t ) \|_L dt $$
-subject to: $\phi(0)=\text{Id} ;  \phi(1)=\int_0^1 v(\phi(x,t),t) dt = \phi_1$.
+$$ D( \text{Id}, \phi) = \int_0^1 \| v( x, t ) \|_L dt $$
+subject to: $\phi(0)=\text{Id} ;  \phi(1)=\int_0^1 v(\phi(x,t),t) dt = \phi_1$.  The norm $\| \cdot \|_L$ is a Sobolev norm on the velocity field.
 
-In image registration, we replace these endpoints with a metric such as $\| I - J(\phi_1)\|^2$.
+In image registration, we effectively fix these endpoints with a metric such as $\| I - J(\phi_1)\|^2$.
 
 ## Build a template subject to these metrics
 
-code here
+SyN has several parameters that determine the nature of $\|\cdot\|_L$ and the similarity term that matches $I$ to $J$.  The pairwise registrations are driven by these metrics and, consequently, so is the poplutation template (empirical mean).
+
+```{r pop}
+pop = ri( "all" )
+avgImage = antsAverageImages( pop )
+templateA = buildTemplate( avgImage, pop, 
+  typeofTransform = "Affine", verbose = F )
+```
 
 
+## Better template with SyN and compare
 
-## Construct priors in the template space
+```{r pop2,echo=1:1}
+templateS = buildTemplate( templateA, pop, 
+  typeofTransform = "SyN", verbose = F )
+layout( matrix(1:2, nrow=1) )
+invisible( plot( templateA ) )
+invisible( plot( templateS ) )
+```
 
-code here
 
+## Compare the population to the template
 
-## Repeat the population study, given this representation
+The SyN template looks closer to an average of this population.
 
-code here
+```{r plotpop,echo=FALSE}
+layout( matrix(1:6, nrow=2 ) )
+for ( k in 1:6 ) plot( pop[[k]] )
+```
+
+Quantitative metrics will bear this out, by design.  Ie the `buildTemplate` function does a gradient descent on both shape and appearance difference.
+
+## Run a population study, given this template
+
+We map all images to this template and save the warps.
+
+```{r popnorm}
+wlist = list()
+for ( k in 1:length( pop ) ) {
+  reg = antsRegistration( templateS, 
+    pop[[k]], "SyN")
+  warp = antsImageRead( reg$fwdtransforms[1])
+  wlist[[ k ]] = warp
+}
+```
 
 ## Use PCA to compute shape probabilities
 
+PCA can give us a (here, very simple) basis set for deformation space.
 
-## Use PCA to compute shape probabilities
+```{r dpca}
+mskpca = getMask( templateS ) %>% 
+  morphology( "dilate", 5 )
+dpca = multichannelPCA( wlist, mskpca, 
+  pcaOption='svd', verbose=FALSE ) # standard
+```
+
+
+
+## Use PCA to simulate shapes
+
+Show the shape change induced by each component.
+
+```{r viewer}
+layout( matrix(1:6, nrow=2 ) )
+for ( ww in 1:3 )
+  {
+  myw = dpca$pcaWarps[[ww]] * ( 1 ) / 
+    max( abs( dpca$pcaWarps[[ww]]  ) )
+  myw = smoothImage( myw, antsGetSpacing( templateS ) * 3 )
+  warpTx = antsrTransformFromDisplacementField(  myw  )
+  # compose several times to get a visual effect
+  wtxlong = list( ) 
+  for ( i in 1:10 ) wtxlong[[i]]=warpTx
+  warped = applyAntsrTransform( wtxlong, data = templateS,
+    reference = templateS )
+ # plot( warped  , doCropping = F  )
+#  plot( warped - templateS , doCropping = F  )
+  }
+```
+
+## Use PCA to simulate shapes
+
+Show the shape change induced by each component.
+
+```{r viewerb,echo=FALSE,message=FALSE,warning=FALSE}
+layout( matrix(1:6, nrow=2 ) )
+for ( ww in 1:3 )
+  {
+  myw = dpca$pcaWarps[[ww]] * ( 1 ) / 
+    max( abs( dpca$pcaWarps[[ww]]  ) )
+  myw = smoothImage( myw, antsGetSpacing( templateS ) * 3 )
+  warpTx = antsrTransformFromDisplacementField(  myw  )
+  # compose several times to get a visual effect
+  wtxlong = list( ) 
+  for ( i in 1:10 ) wtxlong[[i]]=warpTx
+  warped = applyAntsrTransform( wtxlong, data = templateS,
+    reference = templateS )
+  plot( warped  , doCropping = F  )
+  plot( warped - templateS , doCropping = F  )
+  }
+```
+
+## Use PCA to generate images
+
+```{r reconparams,echo=FALSE,message=FALSE,warning=FALSE}
+options( digits = 3 )
+shapeDistances = rep( 0.0, length( wlist ) )
+pcaReconCoeffs = matrix( nrow = length( wlist ), ncol = ncol(dpca$pca$v)  )
+for ( i in 1:length( wlist ) ) {
+  wvec = multichannelToVector( wlist[[i]], mskpca )
+  mdl = lm( wvec ~ 0 + dpca$pca$v )
+  pcaReconCoeffs[ i,  ] = coefficients(mdl)
+}
+pcaReconCoeffsMeans = colMeans( pcaReconCoeffs )
+pcaReconCoeffsSD = apply( pcaReconCoeffs, FUN=sd, MARGIN=2 )
+################################
+for ( i in 1:length( wlist ) ) {
+  temp =  matrix( pcaReconCoeffs[ i,  ], nrow = 1 ) -
+    pcaReconCoeffsMeans
+  shapeDistances[ i ] =
+    temp %*% ( diag( 1/pcaReconCoeffsSD ) %*% t( temp ) )
+}
+shapeDistancesNorm = sd( shapeDistances )
+shapeProbabilities = exp( -1 * shapeDistances / 
+  ( 200.0 * shapeDistancesNorm ) )
+computeShapeProbability <-function( newCoeffs, 
+          shapeDistancesNormIn, pcaCoefMeans, 
+          pcaReconCoeffsSDIn, shapePermit = 2 ) {
+  temp =  matrix( newCoeffs, nrow = 1 ) - pcaCoefMeans
+  locdist = temp %*% ( diag( 1/pcaReconCoeffsSDIn ) %*% t( temp ) )
+  shapeProbability = exp( -1.0 * locdist/ ( shapePermit * shapeDistancesNormIn ) )
+  return( as.numeric( shapeProbability ) )
+}
+
+temp = computeShapeProbability(  pcaReconCoeffs[ 1,  ], 
+  shapeDistancesNorm, pcaReconCoeffsMeans, pcaReconCoeffsSD  )
+
+shapeVarSD = 0.2
+genImage <- function(  shapeVarSD = 0.2 ) {
+ncomp = 8
+scl = 1/ncomp
+vecSmooth = 1.0
+k = 4 # which fish
+locparams = pcaReconCoeffs[ k,  ] 
+for ( i in 1:ncol( pcaReconCoeffs ) ) {
+  shapeParam = rnorm( 1, pcaReconCoeffsMeans[i], pcaReconCoeffsSD[i] * shapeVarSD )
+  locparams[i] = shapeParam
+  if ( i == 1 )
+    combvec = dpca$pcaWarps[[i]] * shapeParam else 
+      combvec = combvec + dpca$pcaWarps[[i]] * shapeParam
+}
+combvec = smoothImage( combvec, vecSmooth )
+# combvec = combvec * 0.25 / max( abs( combvec  ) )
+warpTx = antsrTransformFromDisplacementField( combvec * (1.0) )
+# compose several times to get a visual effect
+wtxlong = list( ) ; for ( i in 1:ncomp ) wtxlong[[i]]=warpTx
+warped = applyAntsrTransform( wtxlong, data = templateS,
+  reference = templateS ) 
+loprob = computeShapeProbability(  locparams, 
+  shapeDistancesNorm, pcaReconCoeffsMeans, pcaReconCoeffsSD  )
+return( list(  warped,  loprob ) )
+}
+```
+
+
+```{r reconparams2,echo=FALSE}
+set.seed( 98 )
+options( digits = 3 )
+i0 = genImage( 0.15 )
+i1 = genImage( 0.15 )
+i2 = genImage( 0.15 )
+i3 = genImage( 0.15 )
+i4 = genImage( 0.15 )
+i5 = genImage( 0.15 )
+options( digits = 3 )
+locProbs = data.frame(i0[[2]], i1[[2]], i2[[2]], i3[[2]], i4[[2]], i5[[2]] )
+names(locProbs) = paste0("p",1:6)
+locProbs
+layout( matrix(1:6, nrow=2) )
+invisible( plot( i0[[1]] ) )
+invisible( plot( i1[[1]] ) )
+invisible( plot( i2[[1]] ) )
+invisible( plot( i3[[1]] ) )
+invisible( plot( i4[[1]] ) )
+invisible( plot( i5[[1]] ) )
+
+
+```
+
+
+## Less probable images
+
+```{r reconparams3,echo=FALSE}
+i0 = genImage( 0.22 )
+i1 = genImage( 0.22 )
+i2 = genImage( 0.22 )
+i3 = genImage( 0.22 )
+i4 = genImage( 0.22 )
+i5 = genImage( 0.22 )
+options( digits = 3 )
+locProbs = data.frame(i0[[2]], i1[[2]], i2[[2]], i3[[2]], i4[[2]], i5[[2]] )
+names(locProbs) = paste0("p",1:6)
+locProbs
+layout( matrix(1:6, nrow=2) )
+invisible( plot( i0[[1]] ) )
+invisible( plot( i1[[1]] ) )
+invisible( plot( i2[[1]] ) )
+invisible( plot( i3[[1]] ) )
+invisible( plot( i4[[1]] ) )
+invisible( plot( i5[[1]] ) )
+
+```
+
+
+## Comments on PCA and deformation spaces
+
+* a first order approximation (at best) to the true probabilistic shape space
 
 * the template is not a "true mean" wrt the PCA space.
 
-* just one way in which the theory is broken in this (perhaps still useful) example.
+* just a few ways in which the theory is broken in this (perhaps still useful) example.
+
+* fairly straight forward to improve on this situation - but difficult to demonstrate that it impacts practical outcomes.
+
+* in fact, these types of examples have yet to enter clinical practice.
 
 ## Conclusions of this section
 

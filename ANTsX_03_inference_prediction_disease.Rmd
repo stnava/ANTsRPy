@@ -49,7 +49,7 @@ classification and testing for disease and anomaly.
 
 1. Easy:  Segmentation, some forms of super-resolution (SR).
     * Various forms of U-Nets (segmentation) and other convolutional networks (SR).
-    * Common between segmentation and SR: data is either readibly available or very amenable to augmentation.
+    * Common between segmentation and SR: data is either readily available or very amenable to augmentation.
 
 2. Everything else is hard but this class is less so: Regression and classification of common patient characteristics.
     * Predict "brain age" from MR imaging ( a regression problem );
@@ -64,7 +64,8 @@ classification and testing for disease and anomaly.
 
 ## Introductory lesson for deep learning $+$ pattern discovery
 
-* A quick study of Alzheimer's disease (AD) and related disorders
+* A quick study of Alzheimer's disease (AD) and related disorders via ADNI data
+    * there is a reasonable semblance of ground truth here: clinical diagnosis as well as molecular biomarkers of pathology
 
 * We will base the analysis on "brain age" which is a method that uses anatomical MRI to predict the difference between the brain's "age" and the patient's chronological age.
     * not as well-founded as telomere length
@@ -80,12 +81,12 @@ classification and testing for disease and anomaly.
 2. Perform some relatively minimal processing on these data.
     * usually bias correction, affine registration and segmentation
     * we just do bias correction and brain-based affine registration
-        * if useful, we can demo the brain extraction example [HERE](FIXME).
+        * if useful, we can demo the brain extraction example [HERE](https://github.com/ANTsRNet/BrainExtraction).
 
 3. Construct a deep, convolutional regression network to predict the patient's age.
     * in fact, we predict gender (sex?) as well, in addition to the data collection site
-    * we use a two input, three output ResNet for this purpose: BrainAge$^+$
-    * ResNets alleviate the "vanishing gradient" problem and that's all we need to know for this purpose.
+    * we use a two input, three output ResNet as a convolutional regression network: BrainAge$^+$
+    * [ResNets](https://icml.cc/2016/tutorials/icml2016_tutorial_deep_residual_networks_kaiminghe.pdf) alleviate the "vanishing gradient" problem and that's all we need to know for this purpose.  The link is to an ICML Facebook research presentation on ResNets.
 
 4. Investigate how this control-based BrainAge model gives us insight into Alzheimer's disease.
     * realistically, quite a long, difficult project.  
@@ -93,17 +94,134 @@ classification and testing for disease and anomaly.
     
 ## Large dataset of control subjects
 
+* Training data for predicting age, gender and "study":
+    * Dallas Lifespan Brain Study ([DLBS](http://fcon_1000.projects.nitrc.org/indi/retro/dlbs.html)): n = 275 (lifespan)
+    * Human Connectome Project ([HCP](https://www.humanconnectome.org)): n = 1245 (young control)
+    * Information eXtraction from Images ([IXI](https://brain-development.org/ixi-dataset/)): n = 563 (lifespan)
+    * Nathan Kline Institute Rockland ([NKI](http://fcon_1000.projects.nitrc.org/indi/enhanced/access.html)): n = 1260 (lifespan)
+    * Open Access Series of Imaging Studies (Oasis-2): n = 433 (lifespan, 18-93)
+        * we should update this dataset which now contains [1098 subjects](https://www.oasis-brains.org)
+    * Southwest University Adult Lifespan Dataset [SALD](http://fcon_1000.projects.nitrc.org/indi/retro/sald.html): n = 494 (young control)
+
+* Testing Data (mixed control, clinical MCI and pathologically confirmed AD): 
+    * Alzheimer's disease neuroimaging initiative ([ADNI](http://adni.loni.usc.edu)): n = 2101
+
+
 ## Minimal data processing
+
+$N4 \rightarrow BXT \rightarrow Bvol \rightarrow \phi_\text{aff}$
+
+```{r,eval=FALSE}
+templateSub = resampleImage( template, 
+  dim(template)/2, useVoxels=TRUE, interpType = 'linear' )
+mval =  0.5 * mean( image )
+meanMask = thresholdImage( image, mval, Inf ) %>%
+  morphology( "dilate", 3 ) %>% iMath("FillHoles")
+temp = n4BiasFieldCorrection( image, meanMask, 
+  shrinkFactor = 4 )
+imageBxt = bxt( temp, bxtTemplateFN, bxtModelFN )
+bvol = prod( antsGetSpacing( imageBxt ) ) * sum(imageBxt)
+biasField = n4BiasFieldCorrection( image, 
+  thresholdImage( imageBxt, 0.5, Inf ), 
+  returnBiasField = T, shrinkFactor = 4 )
+image = image / biasField
+aff = antsRegistration( template, image * imageBxt, 
+  "Affine", outprefix = outprefix, verbose = F )
+```
 
 ## ResNet for BrainAge$^+$
 
-* ResNet
+ResNet Results on held out 10\% validation data
+
+```
+>   pp = predict( mdlFull, vald[[1]], batch_size = bs )
+>   print( mean( abs( vald[[2]][[2]] - pp[[2]] ) ) )
+[1] 3.407733   # age prediction error
+>   print( table( vald[[2]][[3]] , pp[[3]] >= 0.5 ) )
+   
+    FALSE TRUE
+  0   209   16
+  1    35  167
+> (209+167)/(209+167+35+16)
+[1] 0.8805621  # gender classification accuracy
+```
 
 ## Basic statistical inference on Brain Age Gap
 
+
+```
+lm(formula = predictedAgeMean ~ age + dx + brainVolume + gender, 
+    data = fulldf[goodsel, ])
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  1.457e+01  1.858e+00   7.841 7.20e-15 ***
+age          7.212e-01  1.688e-02  42.728  < 2e-16 ***
+dxEMCI       5.608e-02  3.400e-01   0.165   0.8690    
+dxLMCI       2.000e+00  2.866e-01   6.978 4.05e-12 ***
+dxAD         2.845e+00  3.878e-01   7.336 3.18e-13 ***
+brainVolume  4.842e-06  9.347e-07   5.180 2.44e-07 ***
+genderM     -5.547e-01  2.926e-01  -1.896   0.0581 .  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 5.211 on 2002 degrees of freedom
+Multiple R-squared:  0.506,	Adjusted R-squared:  0.5045 
+F-statistic: 341.8 on 6 and 2002 DF,  p-value: < 2.2e-16
+```
+
+## Basic statistical inference on brain age
+
+
+```{r,echo=FALSE}
+fulldf = read.csv( "/Users/stnava/Downloads/ADNIBrainAge/fulldf.csv" )
+fulldf$dx = factor( fulldf$dx, levels = c("CN","SMC","EMCI", "LMCI","AD"))
+goodsel = ( abs( fulldf$age[] - fulldf$predictedAgeMean[] ) < 15 ) &
+  ( fulldf$dx == "CN" | fulldf$dx == "AD" | fulldf$dx == "LMCI" ) # fulldf$dx != "EMCI" )
+agemdl = lm( GAP ~ age +  dx + brainVolume + gender , data=fulldf[goodsel,] )
+visreg::visreg( agemdl, "dx" )
+```
+
+
 ## Embedding functions of this model
 
+FIXME - look at file on computer
+
+## Embedding functions of this model: Relationship with diagnosis
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+embedMat = data.matrix( read.csv( '/Users/stnava/Downloads/ADNIBrainAge/embedMat.csv' ) )
+embedDF = read.csv( '/Users/stnava/Downloads/ADNIBrainAge/embedDF.csv'  )
+##########
+myk = 1819
+embedDF$embed = embedMat[,myk]
+mdl = lm(  embed ~ dx + age + gender, data = embedDF )
+visreg::visreg( mdl, "dx", gg=F, cex=4)
+# summary( lm( embedMat[,myk] ~ dx , data = embedDF ))
+# myk = 556
+# summary( lm( embedMat[,myk] ~ dx , data = embedDF ))
+```
+
+## Embedding functions of this model: Relationship with diagnosis
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+myk = 556
+embedDF$embed = embedMat[,myk]
+mdl = lm(  embed ~ dx + age + gender, data = embedDF )
+visreg::visreg( mdl, "dx", gg=F, cex=4 )
+```
+
+
 ## Class-specific activation maps 
+
+* Modern (actually deep) deep learning convolutional networks may have thousands of layers.
+
+* Activations at individual layers may encode important information about disease - even if you trained a network on a different problem ( e.g. predicting age )
+
+* Let's look at the activation maps for AD and controls at a given level in the BrainAge$^+$ ResNet.
+
+* FIXME - go to ITK-SNAP.
+
 
 ## Other directions of research with the BrainAge$^+$ network
 
@@ -144,4 +262,13 @@ classification and testing for disease and anomaly.
 
 * ANTs in R and Python is, in some sense, an attempt to democratize access to pattern theory.
 
-* We demonstrated, in these slides, a few key steps ...
+* We demonstrated, in these slides, a few ways in which we can employ deep learning as an inferential tool
+
+* We showed some examples of how this application can be repurposed to produce features which are the prediction outcomes from a deep but intermediate layer of the network.
+
+* This type of work is still in its infancy - the number of subjects is never large enough but perfection is the enemy of the good.
+
+* At this stage, the prudent approach is to develop well-designed studies that use deep learning as a tool not as a primary end-point.
+
+* Nevertheless, DL provides unprecedented ability to rapidly process and interpret large datasets.  The processing for this ADNI study was done over the last few weeks.
+
